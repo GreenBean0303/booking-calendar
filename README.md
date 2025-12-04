@@ -49,6 +49,10 @@ JDBC URL: jdbc:h2:mem:calendardb
 Username: sa
 Password: (jäta tühjaks)
 
+Või kasuta mysql'i:
+kasutaja: calendar_user
+parool:calendar_pass
+
 
 ## Projekti struktuur
 

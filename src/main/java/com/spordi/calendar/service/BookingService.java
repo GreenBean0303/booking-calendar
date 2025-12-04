@@ -70,6 +70,7 @@ public class BookingService {
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .status(BookingStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);
@@ -103,13 +104,14 @@ public class BookingService {
     /**
      * Leia kõik aktiivsed broneeringud (kalender)
      */
-    public List<BookingResponse> getAllActiveBookings() {
-        List<Booking> bookings = bookingRepository.findByStatus(BookingStatus.ACTIVE);
+public List<BookingResponse> getAllActiveBookings() {
+    List<Booking> bookings =
+            bookingRepository.findByStatusOrderByStartTimeAsc(BookingStatus.ACTIVE);
 
-        return bookings.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+    return bookings.stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
 
     /**
      * Leia broneeringud kuupäeva järgi
@@ -164,14 +166,23 @@ public class BookingService {
     // ==================== DELETE (Admin only) ====================
 
     /**
-     * Kustuta broneering (ainult admin)
+     * Kustuta broneering (ainult admin, ilma 24h reeglita)
      */
-    public void deleteBooking(Long bookingId) {
-        if (!bookingRepository.existsById(bookingId)) {
-            throw new NotFoundException("Booking not found");
+    public void deleteBooking(Long bookingId, Long currentUserId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
+
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        // If you don't import Role, use User.Role.ADMIN directly:
+        boolean isAdmin = currentUser.getRole() == User.Role.ADMIN;
+
+        if (!isAdmin) {
+            throw new UnauthorizedException("Only admin can delete bookings");
         }
 
-        bookingRepository.deleteById(bookingId);
+        bookingRepository.delete(booking);
     }
 
     // ==================== Helper Methods ====================
@@ -187,7 +198,7 @@ public class BookingService {
                 .roomName(booking.getRoomName())
                 .startTime(booking.getStartTime())
                 .endTime(booking.getEndTime())
-                .status(booking.getStatus())
+                .status(booking.getStatus().name())
                 .createdAt(booking.getCreatedAt())
                 .cancelledAt(booking.getCancelledAt())
                 .build();

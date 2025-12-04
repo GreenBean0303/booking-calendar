@@ -68,8 +68,11 @@ public class BookingController {
 
     // Admin only - force delete
     @DeleteMapping("/{id}/admin")
-    public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
-        bookingService.deleteBooking(id);
+    public ResponseEntity<Void> deleteBooking(
+            @PathVariable Long id,
+            @RequestHeader(value = "User-Id", defaultValue = "1") Long userId) {
+
+        bookingService.deleteBooking(id, userId);
         return ResponseEntity.noContent().build();
     }
 }
