@@ -2,6 +2,7 @@ package com.spordi.calendar.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,35 +17,28 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "room_name", nullable = false, length = 100)
+    @Column(nullable = false)
     private String roomName;
 
-    @Column(name = "start_time", nullable = false)
+    @Column(nullable = false)
     private LocalDateTime startTime;
 
-    @Column(name = "end_time", nullable = false)
+    @Column(nullable = false)
     private LocalDateTime endTime;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private BookingStatus status = BookingStatus.ACTIVE;
+    @Column(nullable = false)
+    private BookingStatus status;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
-
-    // Booking status enum
     public enum BookingStatus {
         ACTIVE,
         CANCELLED

@@ -1,0 +1,47 @@
+body { font-family: system-ui, sans-serif; margin: 20px; }
+h1 { margin-bottom: 10px; }
+form { display: grid; gap: 12px; max-width: 380px; margin-bottom: 20px; }
+
+label { display: flex; flex-direction: column; font-size: 0.9rem; gap: 4px; }
+
+.row {
+    display: flex;
+    gap: 8px;
+}
+
+.date-button,
+.time-button {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 8px 10px;
+    background: #f5f5f5;
+    cursor: pointer;
+    font: inherit;
+    height: 38px;
+    box-sizing: border-box;
+}
+
+.date-button {
+    flex: 1;
+    min-width: 0;
+}
+
+.time-button {
+    width: 90px;
+    text-align: center;
+}
+
+button[type="submit"] {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #e0e0e0;
+    cursor: pointer;
+    font: inherit;
+}
+
+table { border-collapse: collapse; margin-top: 10px; width: 100%; max-width: 600px; }
+th, td { border: 1px solid #ccc; padding: 4px 8px; }
+th { background: #f0f0f0; }

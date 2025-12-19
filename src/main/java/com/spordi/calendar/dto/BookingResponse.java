@@ -1,12 +1,11 @@
 package com.spordi.calendar.dto;
 
-import com.spordi.calendar.model.Booking.BookingStatus;
-import lombok.Builder;
-import lombok.Data;
-
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class BookingResponse {
 
@@ -16,7 +15,7 @@ public class BookingResponse {
     private String roomName;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private BookingStatus status;
+    private String status;
     private LocalDateTime createdAt;
     private LocalDateTime cancelledAt;
 }

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Bookings</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 20px; }
+        h1 { margin-bottom: 10px; }
+        form { display: grid; gap: 8px; max-width: 320px; margin-bottom: 20px; }
+        label { display: flex; flex-direction: column; font-size: 0.9rem; }
+        input, button { padding: 6px 8px; }
+        table { border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 4px 8px; }
+        th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+
+<h1>Bookings</h1>
+
+<form id="bookingForm">
+    <label>
+        Start time
+        <div class="row">
+            <input name="startDate" type="date" class="date-button" required>
+            <select name="startTime" id="startTimeSelect" class="time-button" required></select>
+        </div>
+    </label>
+
+    <label>
+        End time
+        <div class="row">
+            <input name="endDate" type="date" class="date-button" required>
+            <select name="endTime" id="endTimeSelect" class="time-button" required></select>
+        </div>
+    </label>
+
+    <button type="submit">Create booking</button>
+</form>
+
+<table id="bookingsTable">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>User</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script th:inline="javascript">
+    // --- globals coming from server ---
+    const CURRENT_ROLE    = /*[[${role}]]*/ "USER";
+    const CURRENT_USER    = /*[[${username}]]*/ "user1";
+    const CURRENT_USER_ID = /*[[${userId}]]*/ 1;
+    const API_BASE        = "/api/bookings";
+
+    function toIsoSeconds(dateStr, timeStr) {
+        if (!dateStr || !timeStr) return null;
+        return `${dateStr}T${timeStr}:00`;
+    }
+
+    function formatDateTime(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mi = String(d.getMinutes()).padStart(2, "0");
+
+        return `${dd}-${mm}-${yyyy} ${hh}:${mi}`;
+    }
+
+    function fillTimeSelect(select) {
+        for (let h = 0; h < 24; h++) {
+            for (let m of [0, 30]) {
+                const hh = String(h).padStart(2, "0");
+                const mm = String(m).padStart(2, "0");
+                const value = `${hh}:${mm}`;
+                const opt = document.createElement("option");
+                opt.value = value;
+                opt.textContent = value;
+                select.appendChild(opt);
+            }
+        }
+    }
+
+    async function loadBookings() {
+        const res = await fetch(API_BASE);
+        const data = await res.json();
+        const tbody = document.querySelector("#bookingsTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(b => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${b.id ?? ""}</td>
+                <td>${b.username ?? ""}</td>
+                <td>${formatDateTime(b.startTime)}</td>
+                <td>${formatDateTime(b.endTime)}</td>
+                <td>${b.status ?? ""}</td>
+                <td>
+                    ${
+                        (CURRENT_ROLE === "ADMIN" || b.username === CURRENT_USER)
+                            ? `<button type="button" class="cancel-btn" data-id="${b.id}">Cancel</button>`
+                            : ``
+                    }
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll(".cancel-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const id = btn.getAttribute("data-id");
+                if (!id) return;
+
+                const isAdmin = CURRENT_ROLE === "ADMIN";
+                const url = isAdmin
+                    ? `${API_BASE}/${id}/admin`
+                    : `${API_BASE}/${id}`;
+
+                const res = await fetch(url, {
+                    method: "DELETE",
+                    headers: { "User-Id": String(CURRENT_USER_ID) }
+                });
+
+                if (!res.ok) {
+                    let msg = "Failed to cancel/delete booking: " + res.status;
+                    try {
+                        const err = await res.json();
+                        if (err.message) msg += "\n" + err.message;
+                    } catch (_) {}
+                    alert(msg);
+                    return;
+                }
+
+                await loadBookings();
+            });
+        });
+    }
+
+    document.getElementById("bookingForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target;
+
+        const startDate = f.startDate.value;
+        const startTime = f.startTime.value;
+        const endDate = f.endDate.value;
+        const endTime = f.endTime.value;
+
+        if (!startDate || !startTime || !endDate || !endTime) {
+            alert("Please fill all dates and times.");
+            return;
+        }
+
+        const startIso = toIsoSeconds(startDate, startTime);
+        const endIso = toIsoSeconds(endDate, endTime);
+
+        const start = new Date(startIso);
+        const end = new Date(endIso);
+
+        if (end <= start) {
+            alert("End time must be after start time.");
+            return;
+        }
+
+        const body = {
+            roomName: "Basketball court",
+            startTime: startIso,
+            endTime: endIso
+        };
+
+        const res = await fetch(API_BASE, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "User-Id": String(CURRENT_USER_ID)
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+            let msg = "Booking failed: " + res.status;
+            try {
+                const err = await res.json();
+                if (err.message) msg += "\n" + err.message;
+            } catch (_) {}
+            alert(msg);
+            return;
+        }
+
+        f.reset();
+        await loadBookings();
+    });
+
+    fillTimeSelect(document.getElementById("startTimeSelect"));
+    fillTimeSelect(document.getElementById("endTimeSelect"));
+    loadBookings();
+</script>
+
+</body>
+</html>
